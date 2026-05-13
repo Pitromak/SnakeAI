@@ -15,7 +15,7 @@ SZARY = (50, 50, 50)  # Nowy kolor na obramowanie
 SZEROKOSC = 640  # Rozmiar samej czarnej planszy, po której biega wąż
 WYSOKOSC = 480
 ROZMIAR_BLOKU = 20
-PREDKOSC = 10
+PREDKOSC = 500
 
 # 3. Ustawienia okna (Renderowanie)
 MARGIN_GORA = 60  # Więcej miejsca na górze na napis "Wynik"
@@ -43,6 +43,7 @@ class GraSnake:
         self.wynik = 0
         self.jedzenie = None
         self._postaw_jedzenie()
+        self.licznik_klatek = 0
 
     def _postaw_jedzenie(self):
         x = random.randint(0, (SZEROKOSC - ROZMIAR_BLOKU) // ROZMIAR_BLOKU) * ROZMIAR_BLOKU
@@ -53,6 +54,7 @@ class GraSnake:
 
     def play_step(self, akcja):
         nagroda = 10
+        self.licznik_klatek += 1
         # 1. Zostawiamy tylko awaryjne zamykanie okna na krzyżyk
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -90,15 +92,18 @@ class GraSnake:
 
         # Nowe wywołanie kolizji w play_step
         game_over = False
-        if self.is_collision():
+        # NOWY KOD - Wąż umiera jeśli uderzy w ścianę,
+        # ALBO jeśli zrobi więcej ruchów niż 100 * długość jego ciała bez jedzenia
+        if self.is_collision() or self.licznik_klatek > 100 * len(self.waz):
             game_over = True
             nagroda = -10
             return nagroda, game_over, self.wynik
 
-        if self.glowa == self.jedzenie:
+        iif self.glowa == self.jedzenie:
             self.wynik += 1
             nagroda = 10
             self._postaw_jedzenie()
+            self.licznik_klatek = 0
         else:
             self.waz.pop()
 
