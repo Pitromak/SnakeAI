@@ -1,10 +1,13 @@
 import torch
+import os
 import random
 import numpy as np
+import argparse
 from collections import deque
 from main import GraSnake, ROZMIAR_BLOKU
 from model import Linear_QNet, QTrainer
 from helper import plot
+
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
@@ -12,15 +15,19 @@ LR = 0.001
 
 
 class Agent:
-    def __init__(self):
+    # Dodajemy start_eps i lr jako argumenty z domyślnymi wartościami
+    def __init__(self, start_eps=300, lr=0.001):
         self.n_games = 0
-        self.epsilon = 0  # Parametr losowości (Eksploracja)
-        self.gamma = 0.9  # Parametr dalekowzroczności
-        self.memory = deque(maxlen=MAX_MEMORY)  # Pamięć węża (notatnik)
+        self.epsilon = 0
+        self.start_eps = start_eps  # Zapisujemy wartość z suwaka do pamięci agenta
+        self.gamma = 0.9
+        self.memory = deque(maxlen=MAX_MEMORY)
 
-        # Mózg: 11 wejść (nasz radar), 256 neuronów ukrytych, 3 wyjścia (prawo, prosto, lewo)
+        # Inicjalizacja modelu
         self.model = Linear_QNet(11, 256, 3)
-        self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
+
+        # Przekazujemy nasze nowe LR (z suwaka) do trenera!
+        self.trainer = QTrainer(self.model, lr=lr, gamma=self.gamma)
 
     def get_state(self, gra):
         glowa = gra.waz[0]
@@ -73,8 +80,8 @@ class Agent:
         self.trainer.train_step(state, action, reward, next_state, done)
 
     def get_action(self, state):
-        # EKSPLORACJA vs EKSPLOATACJA
-        self.epsilon = 300 - self.n_games  # Im więcej gier rozegra, tym mniej losuje
+        # Tuta wchodzi wartość z suwaka!
+        self.epsilon = self.start_eps - self.n_games
         final_move = [0, 0, 0]
 
         # Na początku gry (epsilon > 0) wąż wykonuje losowe ruchy, żeby "wyczuć" fizykę świata
@@ -92,15 +99,24 @@ class Agent:
 
 
 # === GŁÓWNA PĘTLA TRENINGOWA ===
-def train():
+def train(start_eps, lr, model_path):
     # NOWE ZMIENNE DO WYKRESÓW
     historia_wynikow = []
     historia_srednich = []
     calkowity_wynik = 0
-
-    total_score = 0
     record = 0
-    agent = Agent()
+    # Tworzymy agenta z naszymi parametrami!
+    agent = Agent(start_eps=start_eps, lr=lr)
+
+    if os.path.exists(model_path):
+        try:
+            agent.model.load_state_dict(torch.load(model_path))
+            print(f"Pomyślnie wczytano model: {model_path}")
+        except Exception as e:
+            print(f"Błąd podczas wczytywania modelu: {e}")
+    else:
+        print("Nie znaleziono pliku modelu, zaczynam od zera.")
+
     gra = GraSnake()
 
     print("Rozpoczynam trening AI...")
@@ -146,4 +162,19 @@ def train():
 
 
 if __name__ == '__main__':
-    train()
+    # 1. Tworzymy parser argumentów
+    parser = argparse.ArgumentParser(description='Trenowanie AI Snake')
+
+    # 2. Definiujemy, czego się spodziewamy (te same nazwy co w app.py)
+    parser.add_argument('--eps', type=int, default=300, help='Faza losowości')
+    parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
+    parser.add_argument('--model_path', type=str, default='model/model.pth', help='Sciezka do modelu')
+
+
+    # 3. Zbieramy argumenty wbudowane przez subprocess z app.py
+    args = parser.parse_args()
+
+    print(f"--- URUCHOMIONO Z PARAMETRAMI: EPSILON: {args.eps} | LEARNING RATE: {args.lr} ---")
+
+    # 4. Odpalamy trening z przekazanymi wartościami
+    train(start_eps=args.eps, lr=args.lr, model_path=args.model_path)
