@@ -51,21 +51,29 @@ class GraSnake:
         if self.jedzenie in self.waz:
             self._postaw_jedzenie()
 
-    def play_step(self):
+    def play_step(self, akcja):
+        nagroda = 10
+        # 1. Zostawiamy tylko awaryjne zamykanie okna na krzyżyk
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT and self.kierunek != 'PRAWO':
-                    self.kierunek = 'LEWO'
-                elif event.key == pygame.K_RIGHT and self.kierunek != 'LEWO':
-                    self.kierunek = 'PRAWO'
-                elif event.key == pygame.K_UP and self.kierunek != 'DOL':
-                    self.kierunek = 'GORA'
-                elif event.key == pygame.K_DOWN and self.kierunek != 'GORA':
-                    self.kierunek = 'DOL'
 
+        # 2. Tłumaczymy decyzję AI na nowy kierunek
+        # akcja to tablica [Prosto, W prawo, W lewo] np. [0, 1, 0]
+        kierunki_zegara = ['PRAWO', 'DOL', 'LEWO', 'GORA']
+        idx = kierunki_zegara.index(self.kierunek)  # Sprawdzamy gdzie patrzymy teraz
+
+        if akcja[0] == 1:
+            nowy_kierunek = kierunki_zegara[idx]  # [1,0,0] -> Jedź prosto
+        elif akcja[1] == 1:
+            nowy_kierunek = kierunki_zegara[(idx + 1) % 4]  # [0,1,0] -> Skręt w prawo
+        else:  # akcja[2] == 1
+            nowy_kierunek = kierunki_zegara[(idx - 1) % 4]  # [0,0,1] -> Skręt w lewo
+
+        self.kierunek = nowy_kierunek
+
+        # 3. Przesunięcie głowy (tu stary kod zostaje bez zmian)
         x = self.glowa[0]
         y = self.glowa[1]
         if self.kierunek == 'PRAWO':
@@ -83,11 +91,13 @@ class GraSnake:
         # Nowe wywołanie kolizji w play_step
         game_over = False
         if self.is_collision():
+            nagroda = -10
             game_over = True
             return game_over, self.wynik
 
         if self.glowa == self.jedzenie:
             self.wynik += 1
+            nagroda = 10
             self._postaw_jedzenie()
         else:
             self.waz.pop()
@@ -120,7 +130,7 @@ class GraSnake:
         pygame.display.flip()
         self.clock.tick(PREDKOSC)
 
-        return game_over, self.wynik
+        return nagroda, game_over, self.wynik
 
     def is_collision(self, punkt=None):
         if punkt is None:
@@ -140,7 +150,12 @@ class GraSnake:
 if __name__ == '__main__':
     gra = GraSnake()
     while True:
-        koniec, aktualny_wynik = gra.play_step()
+        # Wymuszamy na wężu ciągłą jazdę prosto: [Prosto, Prawo, Lewo]
+        akcja_testowa = [1, 0, 0]
+
+        # Pamiętaj, że teraz odbieramy 3 rzeczy!
+        nagroda, koniec, aktualny_wynik = gra.play_step(akcja_testowa)
+
         if koniec:
             break
 
