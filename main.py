@@ -53,8 +53,11 @@ class GraSnake:
             self._postaw_jedzenie()
 
     def play_step(self, akcja):
-        nagroda = 10
         self.licznik_klatek += 1
+
+        # Mierzymy starą odległość (Odległość Manhattan)
+        odleglosc_stara = abs(self.glowa[0] - self.jedzenie[0]) + abs(self.glowa[1] - self.jedzenie[1])
+
         # 1. Zostawiamy tylko awaryjne zamykanie okna na krzyżyk
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -88,6 +91,14 @@ class GraSnake:
             y -= ROZMIAR_BLOKU
 
         self.glowa = [x, y]
+        # 2. Mierzymy nową odległość i oceniamy ruch
+        odleglosc_nowa = abs(self.glowa[0] - self.jedzenie[0]) + abs(self.glowa[1] - self.jedzenie[1])
+
+        if odleglosc_nowa < odleglosc_stara:
+            nagroda = 1  # Ciepło! Zbliżasz się do celu.
+        else:
+            nagroda = -1  # Zimno! Oddalasz się od celu.
+
         self.waz.insert(0, self.glowa.copy())
 
         # Nowe wywołanie kolizji w play_step

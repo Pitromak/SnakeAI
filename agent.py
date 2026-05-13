@@ -74,11 +74,11 @@ class Agent:
 
     def get_action(self, state):
         # EKSPLORACJA vs EKSPLOATACJA
-        self.epsilon = 80 - self.n_games  # Im więcej gier rozegra, tym mniej losuje
+        self.epsilon = 300 - self.n_games  # Im więcej gier rozegra, tym mniej losuje
         final_move = [0, 0, 0]
 
         # Na początku gry (epsilon > 0) wąż wykonuje losowe ruchy, żeby "wyczuć" fizykę świata
-        if random.randint(0, 200) < self.epsilon:
+        if random.randint(0, 400) < self.epsilon or random.randint(0, 100) < 2:
             move = random.randint(0, 2)
             final_move[move] = 1
         # Potem zaczyna ufać swojej sztucznej inteligencji
