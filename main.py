@@ -2,6 +2,7 @@ import pygame
 import random
 
 pygame.init()
+pygame.font.init()
 
 # 1. Konfiguracja kolorów i okna
 BIAŁY = (255, 255, 255)
@@ -21,6 +22,8 @@ class GraSnake:
         self.display = pygame.display.set_mode((SZEROKOSC, WYSOKOSC))
         pygame.display.set_caption('Snake')
         self.clock = pygame.time.Clock()
+        #(Czcionka systemowa Arial, rozmiar 25)
+        self.czcionka = pygame.font.SysFont('arial', 25)
         self.reset()  # Ustawiamy węża na startowej pozycji
 
     def reset(self):
@@ -96,6 +99,12 @@ class GraSnake:
             pygame.draw.rect(self.display, ZIELONY, pygame.Rect(segment[0], segment[1], ROZMIAR_BLOKU, ROZMIAR_BLOKU))
         pygame.draw.rect(self.display, CZERWONY,
                          pygame.Rect(self.jedzenie[0], self.jedzenie[1], ROZMIAR_BLOKU, ROZMIAR_BLOKU))
+
+        # --- RYSOWANIE WYNIKU ---
+        tekst_wyniku = self.czcionka.render(f'Wynik: {self.wynik}', True, BIAŁY)
+        # blit nakleja tekst_wyniku na główny ekran na podanych koordynatach [x=0, y=0]
+        self.display.blit(tekst_wyniku, [0, 0])
+        # -----------------------------------
 
         pygame.display.flip()
         self.clock.tick(PREDKOSC)
