@@ -15,7 +15,7 @@ SZARY = (50, 50, 50)  # Nowy kolor na obramowanie
 SZEROKOSC = 640  # Rozmiar samej czarnej planszy, po której biega wąż
 WYSOKOSC = 480
 ROZMIAR_BLOKU = 20
-PREDKOSC = 15
+PREDKOSC = 10
 
 # 3. Ustawienia okna (Renderowanie)
 MARGIN_GORA = 60  # Więcej miejsca na górze na napis "Wynik"
@@ -80,11 +80,9 @@ class GraSnake:
         self.glowa = [x, y]
         self.waz.insert(0, self.glowa.copy())
 
+        # Nowe wywołanie kolizji w play_step
         game_over = False
-        # Logika kolizji pozostaje BEZ ZMIAN - wąż dalej myśli, że gra toczy się w oknie 640x480
-        if (self.glowa[0] > SZEROKOSC - ROZMIAR_BLOKU or self.glowa[0] < 0 or
-                self.glowa[1] > WYSOKOSC - ROZMIAR_BLOKU or self.glowa[1] < 0 or
-                self.glowa in self.waz[1:]):
+        if self.is_collision():
             game_over = True
             return game_over, self.wynik
 
@@ -123,6 +121,20 @@ class GraSnake:
         self.clock.tick(PREDKOSC)
 
         return game_over, self.wynik
+
+    def is_collision(self, punkt=None):
+        if punkt is None:
+            punkt = self.glowa
+
+        # 1. Uderzenie w ściany
+        if punkt[0] > SZEROKOSC - ROZMIAR_BLOKU or punkt[0] < 0 or punkt[1] > WYSOKOSC - ROZMIAR_BLOKU or punkt[1] < 0:
+            return True
+
+        # 2. Uderzenie we własny ogon
+        if punkt in self.waz[1:]:
+            return True
+
+        return False
 
 
 if __name__ == '__main__':
