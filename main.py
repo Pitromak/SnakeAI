@@ -91,9 +91,9 @@ class GraSnake:
         # Nowe wywołanie kolizji w play_step
         game_over = False
         if self.is_collision():
-            nagroda = -10
             game_over = True
-            return game_over, self.wynik
+            nagroda = -10
+            return nagroda, game_over, self.wynik
 
         if self.glowa == self.jedzenie:
             self.wynik += 1
