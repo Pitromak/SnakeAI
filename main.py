@@ -15,7 +15,7 @@ SZARY = (50, 50, 50)  # Nowy kolor na obramowanie
 SZEROKOSC = 640  # Rozmiar samej czarnej planszy, po której biega wąż
 WYSOKOSC = 480
 ROZMIAR_BLOKU = 20
-PREDKOSC = 500
+#PREDKOSC = 500      to + linijka 136
 
 # 3. Ustawienia okna (Renderowanie)
 MARGIN_GORA = 60  # Więcej miejsca na górze na napis "Wynik"
@@ -99,7 +99,7 @@ class GraSnake:
             nagroda = -10
             return nagroda, game_over, self.wynik
 
-        iif self.glowa == self.jedzenie:
+        if self.glowa == self.jedzenie:
             self.wynik += 1
             nagroda = 10
             self._postaw_jedzenie()
@@ -133,7 +133,7 @@ class GraSnake:
         self.display.blit(tekst_wyniku, [MARGIN_BOKI, 15])
 
         pygame.display.flip()
-        self.clock.tick(PREDKOSC)
+        #self.clock.tick(PREDKOSC)
 
         return nagroda, game_over, self.wynik
 

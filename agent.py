@@ -4,6 +4,7 @@ import numpy as np
 from collections import deque
 from main import GraSnake, ROZMIAR_BLOKU
 from model import Linear_QNet, QTrainer
+from helper import plot
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
@@ -92,6 +93,11 @@ class Agent:
 
 # === GŁÓWNA PĘTLA TRENINGOWA ===
 def train():
+    # NOWE ZMIENNE DO WYKRESÓW
+    historia_wynikow = []
+    historia_srednich = []
+    calkowity_wynik = 0
+
     total_score = 0
     record = 0
     agent = Agent()
@@ -128,6 +134,15 @@ def train():
                 agent.model.save()
 
             print(f'Gra: {agent.n_games} | Wynik: {score} | Rekord: {record}')
+
+            # === NOWY KOD - WYKRES ===
+            historia_wynikow.append(score)
+            calkowity_wynik += score
+            srednia = calkowity_wynik / agent.n_games
+            historia_srednich.append(srednia)
+
+            # Odpalamy rysowanie z pliku helper.py!
+            plot(historia_wynikow, historia_srednich)
 
 
 if __name__ == '__main__':
