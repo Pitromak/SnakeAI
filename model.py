@@ -22,8 +22,10 @@ class Linear_QNet(nn.Module):
         model_folder_path = './model'
         if not os.path.exists(model_folder_path):
             os.makedirs(model_folder_path)
-        file_name = os.path.join(model_folder_path, file_name)
-        torch.save(self.state_dict(), file_name)
+
+        # Sklejamy folder z nazwą pliku podaną z zewnątrz
+        sciezka_ostateczna = os.path.join(model_folder_path, file_name)
+        torch.save(self.state_dict(), sciezka_ostateczna)
 
 
 # 2. NASZ NAUCZYCIEL (Trener)

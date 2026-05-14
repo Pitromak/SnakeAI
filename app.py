@@ -62,37 +62,51 @@ class CentrumDowodzenia(ctk.CTk):
 
         tytul = ctk.CTkLabel(self.frame_trening, text="Konfiguracja Hiperparametrów",
                              font=ctk.CTkFont(size=20, weight="bold"))
-        tytul.grid(row=0, column=0, pady=(10, 30))
+        tytul.grid(row=0, column=0, pady=(10, 20))
 
-        # Suwak Epsilon (Eksploracja)
-        self.lbl_eps = ctk.CTkLabel(self.frame_trening, text="Faza losowości (Epsilon w grach): 300")
+        # Suwaki (Zostawiamy je, działają świetnie)
+        self.lbl_eps = ctk.CTkLabel(self.frame_trening, text="Faza losowości (Epsilon): 300")
         self.lbl_eps.grid(row=1, column=0, sticky="w", padx=20)
         self.slider_eps = ctk.CTkSlider(self.frame_trening, from_=0, to=1000, command=lambda v: self.lbl_eps.configure(
-            text=f"Faza losowości (Epsilon w grach): {int(v)}"))
+            text=f"Faza losowości (Epsilon): {int(v)}"))
         self.slider_eps.set(300)
         self.slider_eps.grid(row=2, column=0, padx=20, pady=(0, 20), sticky="ew")
 
-        # Suwak Learning Rate
-        self.lbl_lr = ctk.CTkLabel(self.frame_trening, text="Szybkość nauki (Learning Rate): 0.001")
+        self.lbl_lr = ctk.CTkLabel(self.frame_trening, text="Szybkość nauki (LR): 0.001")
         self.lbl_lr.grid(row=3, column=0, sticky="w", padx=20)
         self.slider_lr = ctk.CTkSlider(self.frame_trening, from_=0.0001, to=0.01, number_of_steps=100,
                                        command=lambda v: self.lbl_lr.configure(
-                                           text=f"Szybkość nauki (Learning Rate): {round(v, 4)}"))
+                                           text=f"Szybkość nauki (LR): {round(v, 4)}"))
         self.slider_lr.set(0.001)
         self.slider_lr.grid(row=4, column=0, padx=20, pady=(0, 20), sticky="ew")
 
-        # Start Treningu
+        # --- SEKCJA LOGIKI ZAPISU (PRZEŁĄCZNIK) ---
+        self.tryb_treningu = ctk.StringVar(value="Nowy Model")
+        self.przelacznik = ctk.CTkSegmentedButton(self.frame_trening, values=["Nowy Model", "Kontynuuj Zapis"],
+                                                  variable=self.tryb_treningu, command=self.zmien_tryb_ui)
+        self.przelacznik.grid(row=5, column=0, pady=10)
+
+        # Dynamiczna ramka, która będzie się zmieniać
+        self.dynamic_frame = ctk.CTkFrame(self.frame_trening, fg_color="transparent")
+        self.dynamic_frame.grid(row=6, column=0, pady=10, sticky="ew")
+        self.dynamic_frame.grid_columnconfigure(0, weight=1)
+
+        # Opcja A: Nowy Model (Pole tekstowe)
+        self.entry_nazwa = ctk.CTkEntry(self.dynamic_frame, placeholder_text="Wpisz nazwę, np. waz_szybki", width=250)
+
+        # Opcja B: Kontynuacja (Przycisk i Etykieta)
+        self.sciezka_modelu_trening = ""
+        self.btn_browse_trening = ctk.CTkButton(self.dynamic_frame, text="📁 Wybierz plik do kontynuacji",
+                                                command=self.wybierz_plik_trening)
+        self.lbl_wybrany_trening = ctk.CTkLabel(self.dynamic_frame, text="Nie wybrano pliku", text_color="gray")
+
+        # Inicjalizacja widoku
+        self.zmien_tryb_ui("Nowy Model")
+
+        # Przycisk startu
         self.btn_start_trening = ctk.CTkButton(self.frame_trening, text="🚀 ROZPOCZNIJ TRENING", height=40,
                                                command=self.uruchom_agenta)
-        self.btn_start_trening.grid(row=5, column=0, padx=20, pady=30, sticky="ew")
-
-        # Wybór modelu
-        self.lbl_model = ctk.CTkLabel(self.frame_trening, text="Plik modelu: model.pth (domyślny)", wraplength=300)
-        self.lbl_model.grid(row=6, column=0, pady=(10, 0))
-
-        self.btn_browse = ctk.CTkButton(self.frame_trening, text="📁 Wybierz model do kontynuacji",
-                                        fg_color="transparent", border_width=1, command=self.wybierz_plik)
-        self.btn_browse.grid(row=7, column=0, padx=20, pady=5, sticky="ew")
+        self.btn_start_trening.grid(row=7, column=0, padx=20, pady=30, sticky="ew")
 
     def zbuduj_widok_gry(self):
         self.frame_gra = ctk.CTkFrame(self.main_frame, fg_color="transparent")
@@ -127,18 +141,54 @@ class CentrumDowodzenia(ctk.CTk):
         self.frame_trening.grid_forget()
         self.frame_gra.grid(row=0, column=0, sticky="nsew")
 
+    def zmien_tryb_ui(self, tryb):
+        # Najpierw chowamy wszystkie elementy dynamiczne
+        self.entry_nazwa.grid_forget()
+        self.btn_browse_trening.grid_forget()
+        self.lbl_wybrany_trening.grid_forget()
+
+        if tryb == "Nowy Model":
+            self.entry_nazwa.grid(row=0, column=0, pady=10)
+        else:
+            self.btn_browse_trening.grid(row=0, column=0, pady=5)
+            self.lbl_wybrany_trening.grid(row=1, column=0)
+
+    def wybierz_plik_trening(self):
+        sciezka = filedialog.askopenfilename(initialdir="./model", title="Wybierz stary model",
+                                             filetypes=(("Pliki PTH", "*.pth"), ("Wszystkie pliki", "*.*")))
+        if sciezka:
+            self.sciezka_modelu_trening = sciezka
+            self.lbl_wybrany_trening.configure(text=f"Wybrano: {os.path.basename(sciezka)}", text_color="white")
+
     # --- FUNKCJE LOGICZNE (URUCHAMIANIE PROCESÓW) ---
     def uruchom_agenta(self):
-        self.zatrzymaj_procesy()  # Upewniamy się, że nie odpalimy dwóch na raz
+        self.zatrzymaj_procesy()
         eps = int(self.slider_eps.get())
         lr = round(self.slider_lr.get(), 4)
-        print(f"Uruchamiam agent.py z parametrami: EPS={eps}, LR={lr}")
 
-        # Odpalamy plik agent.py w tle i przekazujemy mu argumenty!
-        self.aktywny_proces = subprocess.Popen([sys.executable, "agent.py",
-                                                "--eps", str(eps),
-                                                "--lr", str(lr),
-                                                "--model_path", self.sciezka_modelu])
+        tryb = self.tryb_treningu.get()
+        komenda = [sys.executable, "agent.py", "--eps", str(eps), "--lr", str(lr)]
+
+        if tryb == "Nowy Model":
+            nazwa = self.entry_nazwa.get().strip()
+            if not nazwa:
+                nazwa = "nowy_model"  # Zabezpieczenie, jakby uzytkownik zostawił puste pole
+            if not nazwa.endswith('.pth'):
+                nazwa += '.pth'
+
+            komenda.extend(["--save_name", nazwa])
+            print(f"Start: Czysty mózg, zapis do {nazwa}")
+
+        elif tryb == "Kontynuuj Zapis":
+            if not self.sciezka_modelu_trening:
+                print("BŁĄD: Wybrałeś kontynuację, ale nie wskazałeś pliku!")
+                return  # Przerywamy, jeśli nie wskazał pliku
+
+            nazwa_pliku = os.path.basename(self.sciezka_modelu_trening)
+            komenda.extend(["--load_path", self.sciezka_modelu_trening, "--save_name", nazwa_pliku])
+            print(f"Start: Kontynuacja pliku {nazwa_pliku}")
+
+        self.aktywny_proces = subprocess.Popen(komenda)
 
     def uruchom_play(self):
         self.zatrzymaj_procesy()

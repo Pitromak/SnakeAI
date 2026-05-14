@@ -99,25 +99,23 @@ class Agent:
 
 
 # === GŁÓWNA PĘTLA TRENINGOWA ===
-def train(start_eps, lr, model_path):
-    # NOWE ZMIENNE DO WYKRESÓW
+def train(start_eps, lr, load_path, save_name):
     historia_wynikow = []
     historia_srednich = []
     calkowity_wynik = 0
     record = 0
-    # Tworzymy agenta z naszymi parametrami!
+
     agent = Agent(start_eps=start_eps, lr=lr)
-
-    if os.path.exists(model_path):
-        try:
-            agent.model.load_state_dict(torch.load(model_path))
-            print(f"Pomyślnie wczytano model: {model_path}")
-        except Exception as e:
-            print(f"Błąd podczas wczytywania modelu: {e}")
-    else:
-        print("Nie znaleziono pliku modelu, zaczynam od zera.")
-
     gra = GraSnake()
+
+    # 1. LOGIKA WCZYTYWANIA: Ładujemy tylko, jeśli podano konkretną ścieżkę
+    if load_path and os.path.exists(load_path):
+        agent.model.load_state_dict(torch.load(load_path))
+        print(f"Kontynuuję naukę na bazie: {load_path}")
+    else:
+        print("Brak pliku bazowego. Tworzę czysty mózg od zera!")
+
+    # ... reszta kodu zostaje bez zmian, aż do momentu bicia rekordu ...
 
     print("Rozpoczynam trening AI...")
 
@@ -147,7 +145,7 @@ def train(start_eps, lr, model_path):
 
             if score > record:
                 record = score
-                agent.model.save()
+                agent.model.save(file_name=save_name)
 
             print(f'Gra: {agent.n_games} | Wynik: {score} | Rekord: {record}')
 
@@ -162,19 +160,16 @@ def train(start_eps, lr, model_path):
 
 
 if __name__ == '__main__':
-    # 1. Tworzymy parser argumentów
     parser = argparse.ArgumentParser(description='Trenowanie AI Snake')
-
-    # 2. Definiujemy, czego się spodziewamy (te same nazwy co w app.py)
     parser.add_argument('--eps', type=int, default=300, help='Faza losowości')
     parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
-    parser.add_argument('--model_path', type=str, default='model/model.pth', help='Sciezka do modelu')
 
+    # NOWE ARGUMENTY
+    parser.add_argument('--load_path', type=str, default='', help='Ścieżka do wczytania')
+    parser.add_argument('--save_name', type=str, default='model.pth', help='Nazwa do zapisu')
 
-    # 3. Zbieramy argumenty wbudowane przez subprocess z app.py
     args = parser.parse_args()
 
-    print(f"--- URUCHOMIONO Z PARAMETRAMI: EPSILON: {args.eps} | LEARNING RATE: {args.lr} ---")
+    print(f"--- TRENING: EPS: {args.eps} | LR: {args.lr} | ZAPIS DO: {args.save_name} ---")
 
-    # 4. Odpalamy trening z przekazanymi wartościami
-    train(start_eps=args.eps, lr=args.lr, model_path=args.model_path)
+    train(start_eps=args.eps, lr=args.lr, load_path=args.load_path, save_name=args.save_name)
