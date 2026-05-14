@@ -1,0 +1,6 @@
+torch
+pygame
+customtkinter
+matplotlib
+onnx
+onnxscript
