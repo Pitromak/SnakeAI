@@ -36,6 +36,9 @@ class CentrumDowodzenia(ctk.CTk):
         self.btn_pokaz = ctk.CTkButton(self.menu_frame, text="🎮 Testowanie Modelu", command=self.pokaz_gre)
         self.btn_pokaz.grid(row=2, column=0, padx=20, pady=10)
 
+        self.btn_eksport = ctk.CTkButton(self.menu_frame, text="📦 Eksportuj do ONNX", command=self.pokaz_eksport)
+        self.btn_eksport.grid(row=3, column=0, pady=10, padx=20)  # Upewnij się, że row to kolejny wolny numer
+
         self.btn_zabij = ctk.CTkButton(self.menu_frame, text="🛑 ZATRZYMAJ WSZYSTKO", fg_color="darkred",
                                        hover_color="red", command=self.zatrzymaj_procesy)
         self.btn_zabij.grid(row=4, column=0, padx=20, pady=(150, 10))
@@ -48,6 +51,7 @@ class CentrumDowodzenia(ctk.CTk):
         # Tworzymy widoki
         self.zbuduj_widok_treningu()
         self.zbuduj_widok_gry()
+        self.zbuduj_widok_eksportu()
 
         # Domyślnie pokazujemy trening
         self.pokaz_trening()
@@ -132,6 +136,39 @@ class CentrumDowodzenia(ctk.CTk):
                                            hover_color="#db6d00", command=self.uruchom_play)
         self.btn_start_gra.grid(row=4, column=0, padx=40, pady=40, sticky="ew")
 
+    def zbuduj_widok_eksportu(self):
+        self.frame_eksport = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+        self.frame_eksport.grid_columnconfigure(0, weight=1)
+
+        tytul = ctk.CTkLabel(self.frame_eksport, text="Eksport Modelu do ONNX",
+                             font=ctk.CTkFont(size=20, weight="bold"))
+        tytul.grid(row=0, column=0, pady=(10, 30))
+
+        opis = ctk.CTkLabel(self.frame_eksport,
+                            text="Przekształca surowe wagi z PyTorcha (.pth) na uniwersalny format grafowy (.onnx),\ngotowy do wdrożenia w silnikach takich jak Godot.")
+        opis.grid(row=1, column=0, pady=10)
+
+        # Sekcja wyboru pliku
+        self.sciezka_in_eksport = ""
+        self.sciezka_out_eksport = ""
+
+        self.lbl_wybrany_eksport = ctk.CTkLabel(self.frame_eksport, text="Nie wybrano pliku", text_color="gray")
+        self.lbl_wybrany_eksport.grid(row=2, column=0, pady=(20, 5))
+
+        self.btn_browse_eksport = ctk.CTkButton(self.frame_eksport, text="📁 Wybierz model bazowy (.pth)",
+                                                command=self.wybierz_plik_do_eksportu)
+        self.btn_browse_eksport.grid(row=3, column=0, pady=5)
+
+        # Informacja o miejscu zapisu
+        self.lbl_miejsce_zapisu = ctk.CTkLabel(self.frame_eksport, text="", text_color="#a3a3a3")
+        self.lbl_miejsce_zapisu.grid(row=4, column=0, pady=(15, 30))
+
+        # Wielki zielony przycisk akcji
+        self.btn_wykonaj_eksport = ctk.CTkButton(self.frame_eksport, text="📦 GENERUJ PLIK ONNX", height=50,
+                                                 fg_color="#28a745", hover_color="#218838",
+                                                 command=self.uruchom_skrypt_eksportu)
+        self.btn_wykonaj_eksport.grid(row=5, column=0, padx=40, sticky="ew")
+
     # --- FUNKCJE PRZEŁĄCZANIA WIDOKÓW ---
     def pokaz_trening(self):
         self.frame_gra.grid_forget()
@@ -140,6 +177,14 @@ class CentrumDowodzenia(ctk.CTk):
     def pokaz_gre(self):
         self.frame_trening.grid_forget()
         self.frame_gra.grid(row=0, column=0, sticky="nsew")
+
+    def pokaz_eksport(self):
+        # Załóżmy, że masz funkcję ukrywającą inne widoki, np. self.ukryj_wszystkie_ramki()
+        # Jeśli ukrywasz je ręcznie, zrób to samo z self.frame_trening.grid_forget() itp.
+        self.frame_trening.grid_forget()
+        self.frame_gra.grid_forget()
+
+        self.frame_eksport.grid(row=0, column=1, sticky="nsew", padx=20, pady=20)
 
     def zmien_tryb_ui(self, tryb):
         # Najpierw chowamy wszystkie elementy dynamiczne
@@ -196,6 +241,26 @@ class CentrumDowodzenia(ctk.CTk):
         # Przekazujemy argument --model_path tak samo jak w treningu
         self.aktywny_proces = subprocess.Popen([sys.executable, "play.py", "--model_path", self.sciezka_modelu_gra])
 
+    def uruchom_skrypt_eksportu(self):
+        if not self.sciezka_in_eksport:
+            self.lbl_miejsce_zapisu.configure(text="BŁĄD: Musisz najpierw wybrać model bazowy!", text_color="#ff4c4c")
+            return
+
+        self.lbl_miejsce_zapisu.configure(text="Przetwarzanie grafu obliczeniowego...", text_color="#f39c12")
+        self.frame_eksport.update()  # Odświeżenie okna, żeby pokazać napis wczytywania
+
+        # Uruchamiamy eksport synchronicznie (chwilę to zajmie, ale okno nie zdąży "zamarznąć")
+        komenda = [sys.executable, "export.py", "--in_path", self.sciezka_in_eksport, "--out_path",
+                   self.sciezka_out_eksport]
+        wynik = subprocess.run(komenda)
+
+        if wynik.returncode == 0:
+            self.lbl_miejsce_zapisu.configure(text=f"Sukces! Plik wygenerowany poprawnie.\nSprawdź folder modelu.",
+                                              text_color="#28a745")
+        else:
+            self.lbl_miejsce_zapisu.configure(text="Wystąpił błąd podczas eksportu. Sprawdź konsolę.",
+                                              text_color="#ff4c4c")
+
     def zatrzymaj_procesy(self):
         if self.aktywny_proces is not None:
             print("Zabijam aktywny proces...")
@@ -217,6 +282,21 @@ class CentrumDowodzenia(ctk.CTk):
             self.sciezka_modelu_gra = sciezka
             nazwa_pliku = os.path.basename(sciezka)
             self.lbl_model_gra.configure(text=f"Plik modelu: {nazwa_pliku}")
+
+    def wybierz_plik_do_eksportu(self):
+        sciezka = filedialog.askopenfilename(initialdir="./model", title="Wybierz plik modelu (.pth)",
+                                             filetypes=(("Pliki PTH", "*.pth"), ("Wszystkie pliki", "*.*")))
+        if sciezka:
+            self.sciezka_in_eksport = sciezka
+            # Automatycznie generujemy ścieżkę wyjściową zmieniając rozszerzenie
+            self.sciezka_out_eksport = sciezka.replace('.pth', '.onnx')
+
+            nazwa_in = os.path.basename(self.sciezka_in_eksport)
+            nazwa_out = os.path.basename(self.sciezka_out_eksport)
+
+            self.lbl_wybrany_eksport.configure(text=f"Model bazowy: {nazwa_in}", text_color="white")
+            self.lbl_miejsce_zapisu.configure(
+                text=f"Plik zostanie wyeksportowany do tego samego folderu jako:\n{nazwa_out}")
 
 if __name__ == "__main__":
     app = CentrumDowodzenia()
