@@ -33,7 +33,7 @@ class CentrumDowodzenia(ctk.CTk):
         self.btn_trening = ctk.CTkButton(self.menu_frame, text="🧠 Panel Treningu", command=self.pokaz_trening)
         self.btn_trening.grid(row=1, column=0, padx=20, pady=10)
 
-        self.btn_pokaz = ctk.CTkButton(self.menu_frame, text="🎮 Pokaz Mistrza", command=self.pokaz_gre)
+        self.btn_pokaz = ctk.CTkButton(self.menu_frame, text="🎮 Testowanie Modelu", command=self.pokaz_gre)
         self.btn_pokaz.grid(row=2, column=0, padx=20, pady=10)
 
         self.btn_zabij = ctk.CTkButton(self.menu_frame, text="🛑 ZATRZYMAJ WSZYSTKO", fg_color="darkred",
@@ -54,6 +54,7 @@ class CentrumDowodzenia(ctk.CTk):
 
         # zmienna przechowująca ścieżkę
         self.sciezka_modelu = "model/model.pth"  # Domyślna ścieżka
+        self.sciezka_modelu_gra = "model/model.pth"  # Domyślna ścieżka dla pokazu
 
     def zbuduj_widok_treningu(self):
         self.frame_trening = ctk.CTkFrame(self.main_frame, fg_color="transparent")
@@ -101,12 +102,21 @@ class CentrumDowodzenia(ctk.CTk):
         tytul.grid(row=0, column=0, pady=(10, 30))
 
         opis = ctk.CTkLabel(self.frame_gra,
-                            text="Uruchamia plik play.py korzystając z zapisanego modelu.\nWąż działa w 100% na własnym instynkcie.")
+                            text="Uruchamia plik play.py korzystając z wybranego modelu.\nWąż działa w 100% na własnym instynkcie.")
         opis.grid(row=1, column=0, pady=10)
 
-        self.btn_start_gra = ctk.CTkButton(self.frame_gra, text="🎮 ODPAL MISTRZA", height=50, fg_color="#b85c00",
+        # DODANE: Sekcja wyboru pliku
+        self.lbl_model_gra = ctk.CTkLabel(self.frame_gra, text="Plik modelu: model.pth (domyślny)", wraplength=300)
+        self.lbl_model_gra.grid(row=2, column=0, pady=(20, 0))
+
+        self.btn_browse_gra = ctk.CTkButton(self.frame_gra, text="📁 Wybierz model do testów",
+                                            fg_color="transparent", border_width=1, command=self.wybierz_plik_gra)
+        self.btn_browse_gra.grid(row=3, column=0, padx=20, pady=5, sticky="ew")
+
+        # Przycisk startu przesunięty na wiersz nr 4
+        self.btn_start_gra = ctk.CTkButton(self.frame_gra, text="🎮 URUCHOM SYMULACJĘ", height=50, fg_color="#b85c00",
                                            hover_color="#db6d00", command=self.uruchom_play)
-        self.btn_start_gra.grid(row=2, column=0, padx=40, pady=40, sticky="ew")
+        self.btn_start_gra.grid(row=4, column=0, padx=40, pady=40, sticky="ew")
 
     # --- FUNKCJE PRZEŁĄCZANIA WIDOKÓW ---
     def pokaz_trening(self):
@@ -132,8 +142,9 @@ class CentrumDowodzenia(ctk.CTk):
 
     def uruchom_play(self):
         self.zatrzymaj_procesy()
-        print("Uruchamiam play.py...")
-        self.aktywny_proces = subprocess.Popen([sys.executable, "play.py"])
+        print(f"Uruchamiam play.py z modelem: {self.sciezka_modelu_gra}")
+        # Przekazujemy argument --model_path tak samo jak w treningu
+        self.aktywny_proces = subprocess.Popen([sys.executable, "play.py", "--model_path", self.sciezka_modelu_gra])
 
     def zatrzymaj_procesy(self):
         if self.aktywny_proces is not None:
@@ -148,6 +159,14 @@ class CentrumDowodzenia(ctk.CTk):
             self.sciezka_modelu = sciezka
             nazwa_pliku = os.path.basename(sciezka)
             self.lbl_model.configure(text=f"Plik modelu: {nazwa_pliku}")
+
+    def wybierz_plik_gra(self):
+        sciezka = filedialog.askopenfilename(initialdir="./model", title="Wybierz plik modelu do testu",
+                                             filetypes=(("Pliki PTH", "*.pth"), ("Wszystkie pliki", "*.*")))
+        if sciezka:
+            self.sciezka_modelu_gra = sciezka
+            nazwa_pliku = os.path.basename(sciezka)
+            self.lbl_model_gra.configure(text=f"Plik modelu: {nazwa_pliku}")
 
 if __name__ == "__main__":
     app = CentrumDowodzenia()

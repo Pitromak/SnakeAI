@@ -1,10 +1,11 @@
 import torch
 import pygame
+import argparse
 from main import GraSnake
 from agent import Agent
 
 
-def play():
+def play(sciezka_modelu):
     print("Ładowanie mistrza AI...")
 
     # Inicjujemy grę i naszego Agenta (potrzebujemy go, żeby użyć jego "radaru" get_state)
@@ -14,11 +15,11 @@ def play():
     # 1. ŁADOWANIE MÓZGU
     # Wczytujemy wagi (połączenia neuronowe) z zapisanego pliku na dysku.
     # Używamy map_location='cpu', żeby uniknąć błędów, jeśli trenowałeś na innym sprzęcie.
-    sciezka_modelu = 'model/model.pth'
     try:
         agent.model.load_state_dict(torch.load(sciezka_modelu, map_location='cpu'))
+        print(f"Wczytano z: {sciezka_modelu}")
     except FileNotFoundError:
-        print("Błąd: Nie znaleziono pliku model.pth w folderze 'model'.")
+        print(f"Błąd: Nie znaleziono pliku: {sciezka_modelu}")
         return
 
     # 2. TRYB EWALUACJI
@@ -57,4 +58,9 @@ def play():
 
 
 if __name__ == '__main__':
-    play()
+    parser = argparse.ArgumentParser(description='Pokaz AI Snake')
+    parser.add_argument('--model_path', type=str, default='model/model.pth', help='Ścieżka do wytrenowanego modelu')
+    args = parser.parse_args()
+
+    # Odpalamy grę z przekazaną ścieżką
+    play(sciezka_modelu=args.model_path)
